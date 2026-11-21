@@ -10,6 +10,7 @@ export async function detectSilence(file,{thresholdDb=-38,minSilence=0.55}={}){
     const frame=Math.max(1,Math.floor(sampleRate*0.025));
     const threshold=Math.pow(10,thresholdDb/20);
     const silent=[];
+    const barCount=180,peaks=Array(barCount).fill(0);
     let open=null;
     for(let i=0;i<decoded.length;i+=frame){
       const end=Math.min(decoded.length,i+frame);
@@ -18,7 +19,10 @@ export async function detectSilence(file,{thresholdDb=-38,minSilence=0.55}={}){
         const samples=decoded.getChannelData(ch);
         for(let j=i;j<end;j+=2){sum+=samples[j]*samples[j];count++;}
       }
-      const quiet=Math.sqrt(sum/Math.max(1,count))<threshold;
+      const rms=Math.sqrt(sum/Math.max(1,count));
+      const bar=Math.min(barCount-1,Math.floor(i/decoded.length*barCount));
+      peaks[bar]=Math.max(peaks[bar],rms);
+      const quiet=rms<threshold;
       if(quiet&&open===null)open=i/sampleRate;
       if(!quiet&&open!==null){
         const stop=i/sampleRate;
@@ -27,7 +31,8 @@ export async function detectSilence(file,{thresholdDb=-38,minSilence=0.55}={}){
       }
     }
     if(open!==null&&decoded.duration-open>=minSilence)silent.push([open,decoded.duration]);
-    return {silent,duration:decoded.duration};
+    const maxPeak=Math.max(...peaks,0.001);
+    return {silent,duration:decoded.duration,peaks:peaks.map(v=>Math.min(1,Math.sqrt(v/maxPeak)))};
   }finally{await ctx.close();}
 }
 export function keepRanges(silent,start,end,padding=0.12){
