@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: autoedit-private
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: AUTOEDIT_API_KEY
+        generateValue: true
+      - key: AUTOEDIT_ALLOWED_ORIGINS
+        value: https://braie-aep.github.io
+      - key: MAX_VIDEO_SECONDS
+        value: "3600"
+      - key: MAX_VIDEO_BYTES
+        value: "524288000"

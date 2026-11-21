@@ -18,6 +18,7 @@ import yt_dlp
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 API_KEY = os.environ.get("AUTOEDIT_API_KEY", "")
@@ -167,3 +168,9 @@ def read_video(video_id: str, authorization: str | None = Header(default=None)):
 @app.on_event("shutdown")
 def on_shutdown():
     shutil.rmtree(ROOT, ignore_errors=True)
+
+# In a combined Docker deployment the Python service also hosts the Vite SPA.
+# API routes are registered first. Running just the API still works without dist/.
+STATIC_DIR = os.getenv("AUTOEDIT_STATIC_DIR", "")
+if STATIC_DIR and Path(STATIC_DIR).is_dir():
+    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="autoedit-ui")
