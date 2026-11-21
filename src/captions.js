@@ -43,3 +43,72 @@ export function toSrt(captions){
   const ts=t=>{const ms=Math.max(0,Math.round(t*1000));const h=Math.floor(ms/3600000),m=Math.floor(ms%3600000/60000),s=Math.floor(ms%60000/1000),x=ms%1000;return [h,m,s].map(n=>String(n).padStart(2,'0')).join(':')+','+String(x).padStart(3,'0')};
   return captions.map((c,i)=>[i+1,ts(c.start)+' --> '+ts(c.end),c.text,''].join('\n')).join('\n');
 }
+
+// Record only the selected highlight's audio, avoiding full-video decoding on long files.
+// Uses real-time playback in the browser; no audio is uploaded.
+export async function captureHighlightAudio(videoUrl,start,end,onProgress=()=>{}){
+  if(!window.MediaRecorder)throw new Error('This browser does not support audio recording.');
+  if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start||end-start>180)
+    throw new Error('Choose a highlight between 1 second and 3 minutes.');
+  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+  if(!AudioContextClass)throw new Error('Web Audio is not available.');
+  const audioEl=document.createElement('video');
+  audioEl.preload='auto';audioEl.playsInline=true;audioEl.src=videoUrl;
+  let ctx,recorder,stream;
+  try{
+    await new Promise((resolve,reject)=>{
+      const timeout=setTimeout(()=>reject(new Error('Unable to open the video audio track.')),15000);
+      audioEl.addEventListener('loadedmetadata',()=>{clearTimeout(timeout);resolve()},{once:true});
+      audioEl.addEventListener('error',()=>{clearTimeout(timeout);reject(new Error('Unable to read the video file.'))},{once:true});
+      audioEl.load();
+    });
+    ctx=new AudioContextClass();
+    const source=ctx.createMediaElementSource(audioEl);
+    const dest=ctx.createMediaStreamDestination();
+    source.connect(dest); // Route to recorder only, not device speakers.
+    stream=dest.stream;
+    const mime=['audio/webm;codecs=opus','audio/webm'].find(type=>MediaRecorder.isTypeSupported(type));
+    if(!mime)throw new Error('This browser cannot record WebM audio.');
+    await new Promise((resolve,reject)=>{
+      if(Math.abs(audioEl.currentTime-start)<.05){resolve();return;}
+      const timeout=setTimeout(()=>reject(new Error('Unable to seek to the selected highlight.')),15000);
+      audioEl.addEventListener('seeked',()=>{clearTimeout(timeout);resolve()},{once:true});
+      audioEl.currentTime=start;
+    });
+    await ctx.resume();
+    const chunks=[];
+    recorder=new MediaRecorder(stream,{mimeType:mime});
+    recorder.addEventListener('dataavailable',event=>{if(event.data.size)chunks.push(event.data)});
+    const stopped=new Promise((resolve,reject)=>{
+      recorder.addEventListener('stop',resolve,{once:true});
+      recorder.addEventListener('error',()=>reject(new Error('Audio recording failed.')),{once:true});
+    });
+    onProgress('Capturing audio from '+Math.round(end-start)+'-second highlight (real time)…');
+    recorder.start(1000);
+    await audioEl.play();
+    await new Promise((resolve,reject)=>{
+      let previousProgress=-1;
+      const tick=()=>{
+        if(audioEl.error){reject(new Error('Video decoding stopped.'));return;}
+        const seconds=Math.min(end-start,Math.max(0,audioEl.currentTime-start));
+        const whole=Math.floor(seconds);
+        if(whole!==previousProgress){previousProgress=whole;onProgress('Capturing highlight audio: '+whole+' / '+Math.ceil(end-start)+' seconds…');}
+        if(audioEl.currentTime>=end||audioEl.ended){resolve();return;}
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    audioEl.pause();
+    recorder.stop();
+    await stopped;
+    const blob=new Blob(chunks,{type:mime});
+    if(blob.size<2000)throw new Error('No usable audio was recorded from this highlight.');
+    return blob;
+  }finally{
+    audioEl.pause();
+    if(recorder&&recorder.state!=='inactive')recorder.stop();
+    stream?.getTracks().forEach(track=>track.stop());
+    if(ctx)await ctx.close().catch(()=>{});
+    audioEl.removeAttribute('src');audioEl.load();
+  }
+}
