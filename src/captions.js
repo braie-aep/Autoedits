@@ -20,7 +20,7 @@ export async function transcribeEnglish(file,onProgress=()=>{}){
     const audio=rendered.getChannelData(0);
     onProgress('Loading free English Whisper model (first download can be large)…');
     if(!transcriberPromise){
-      transcriberPromise=import('@huggingface/transformers').then(async({pipeline})=>
+      transcriberPromise=import(/* @vite-ignore */ 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1').then(async({pipeline})=>
         pipeline('automatic-speech-recognition','onnx-community/whisper-tiny.en',{device:'wasm',dtype:'q8'})
       ).catch(error=>{transcriberPromise=null;throw error;});
     }
