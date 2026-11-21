@@ -92,7 +92,7 @@ async function generateShortsFromLink(){
  let target;
  try{
    target=new URL(input);
-   if(target.protocol!=='https:'||!/(^|\\.)(youtube\\.com|youtu\\.be|youtube-nocookie\\.com)$/.test(target.hostname.toLowerCase().replace(/^www\\./,''))){
+   if(target.protocol!=='https:'||!/(^|\.)(youtube\.com|youtu\.be|youtube-nocookie\.com)$/.test(target.hostname.toLowerCase().replace(/^www\./,''))){
      throw Error('Paste an HTTPS YouTube video link.');
    }
    if(!linkAuthorized)throw Error('Confirm that you own this video or have permission to edit it.');
@@ -101,7 +101,7 @@ async function generateShortsFromLink(){
    const api=new URL(importApiUrl.trim());
    if(api.protocol!=='https:'||api.username||api.password||api.search||api.hash)throw Error('Importer server must be a valid HTTPS base URL.');
    setLinkWorking(true);setLinkStep('Stage 1/4 — asking the private importer to retrieve your video…');
-   const base=api.href.replace(/\\/$/,'');
+   const base=api.href.replace(/\/$/,'');
    const headers={Authorization:'Bearer '+importApiKey.trim()};
    const response=await fetch(base+'/api/import',{method:'POST',mode:'cors',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({url:input,authorized:true})});
    const data=await response.json().catch(()=>null);
@@ -114,7 +114,7 @@ async function generateShortsFromLink(){
    if(!buffer.size)throw Error('The imported file was empty.');
    if(buffer.size>600*1024*1024)throw Error('Imported file is too large for this browser.');
    const mediaType=media.headers.get('content-type')?.startsWith('video/')?media.headers.get('content-type'):'video/mp4';
-   const safeName=String(data.title||'youtube-video').replace(/[^\\w -]/g,'').trim().slice(0,80)||'youtube-video';
+   const safeName=String(data.title||'youtube-video').replace(/[^\w -]/g,'').trim().slice(0,80)||'youtube-video';
    setLinkStep('Stage 3/4 — video ready; finding highlights and generating Shorts…');
    load(new File([buffer],safeName+'.mp4',{type:mediaType}),true);
  }catch(err){setLinkStep('Link automation stopped: '+(err?.message||'Unknown error'))}
