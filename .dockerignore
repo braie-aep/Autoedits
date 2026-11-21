@@ -1,0 +1,14 @@
+.git
+.github
+node_modules
+dist
+__pycache__
+*.pyc
+.env
+.env.*
+!.env.example
+*.mp4
+*.mov
+*.mkv
+*.webm
+*.zip
