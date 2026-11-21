@@ -2,7 +2,7 @@
 // Captions improve relevance; waveform energy provides a fallback.
 const signalWords=/\b(important|amazing|best|because|secret|why|how|remember|tip|learn|surprise|problem|solution|never|always|finally|big|wow|incredible|first|key|result|mistake|actually|interesting)\b/gi;
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
-export function suggestHighlights({duration,captions=[],waveform=[],count=4,clipLength=30}){
+export function suggestHighlights({duration,captions=[],waveform=[],visualSamples=[],count=4,clipLength=30}){
  if(!Number.isFinite(duration)||duration<1)return [];
  const length=clamp(Number(clipLength)||30,Math.min(5,duration),Math.min(duration,60));
  const interval=Math.max(4,Math.min(10,length/3));
@@ -18,8 +18,10 @@ export function suggestHighlights({duration,captions=[],waveform=[],count=4,clip
    const values=waveform.slice(a,b);
    const energy=values.length?values.reduce((sum,v)=>sum+v,0)/values.length:0;
    // A modest preference for the middle, avoiding empty starts/ends.
-   const score=(captions.length?normSpeech*.8+Math.min(keywordHits,5)*.18:0)+energy*.6;
-   const reason=captions.length?(keywordHits?'Speech with potential key phrases':'Sustained speech'):'Audio energy/activity';
+   const relevantFrames=visualSamples.filter(frame=>frame.time>=start&&frame.time<end);
+   const visual= relevantFrames.length?relevantFrames.reduce((sum,frame)=>sum+frame.activity,0)/relevantFrames.length:0;
+   const score=(captions.length?normSpeech*.8+Math.min(keywordHits,5)*.18:0)+energy*.6+visual*.85;
+   const reason=captions.length?(keywordHits?'Speech with potential key phrases':'Sustained speech'):waveform.length?'Audio energy/activity':'Visual frame activity (approximate)';
    candidates.push({start,end,score,reason,excerpt:words.trim().slice(0,160)});
    if(start+length>=duration)break;
  }
