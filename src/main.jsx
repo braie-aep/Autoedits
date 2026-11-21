@@ -2,6 +2,7 @@ import React, {useEffect,useRef,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {Upload,Play,Pause,Download,WandSparkles,Scissors,Monitor,Smartphone,Square,Film,AlertCircle} from 'lucide-react';
 import './style.css';
+import './link-workflow.css';
 import {detectSilence,keepRanges} from './silence.js';
 import {transcribeEnglish,toSrt,captureHighlightAudio} from './captions.js';
 import {suggestHighlights} from './highlights.js';
