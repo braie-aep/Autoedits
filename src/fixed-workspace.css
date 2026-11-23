@@ -212,3 +212,35 @@ body{overscroll-behavior:none}
   .invideo-workspace .timeline-mode-group{gap:4px}
   .invideo-workspace .timeline-cuts-trigger{padding:6px 8px}
 }
+
+/* Studio 3.1 timeline header: Scenes / Layers / Cuts alongside the title. */
+.invideo-workspace .editor-center .timeline .timeline-main-header{
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:nowrap;
+  min-height:51px;height:auto;padding:7px 12px;gap:12px;
+}
+.invideo-workspace .timeline-heading-group{
+  display:flex;align-items:center;gap:12px;min-width:0;flex:0 1 auto;
+}
+.invideo-workspace .timeline-heading-title{
+  display:inline-flex;align-items:center;gap:7px;color:#3b465b;
+  font-size:12px;font-weight:730;white-space:nowrap;flex-shrink:0;
+}
+.invideo-workspace .timeline-heading-title svg{color:#755fe4;flex-shrink:0}
+.invideo-workspace .timeline-main-header .timeline-mode-group{flex-shrink:0}
+.invideo-workspace .timeline-header-right{
+  display:flex;align-items:center;gap:11px;margin-left:auto;flex:0 1 auto;min-width:0;
+}
+.invideo-workspace .timeline-main-header .timeline-toolbar{gap:5px;white-space:nowrap}
+.invideo-workspace .timeline-main-header .scene-edit-actions{gap:5px;white-space:nowrap}
+.invideo-workspace .timeline-main-header .scene-edit-actions button{padding:7px 8px}
+@media(max-width:1360px){
+ .invideo-workspace .editor-center .timeline .timeline-main-header{
+   flex-wrap:wrap;justify-content:flex-start;row-gap:7px;
+ }
+ .invideo-workspace .timeline-header-right{margin-left:auto}
+}
+@media(max-width:820px){
+ .invideo-workspace .timeline-heading-group{gap:7px}
+ .invideo-workspace .timeline-main-header .timeline-header-right{gap:6px}
+ .invideo-workspace .timeline-main-header .timeline-toolbar>span:last-child{display:none}
+}
