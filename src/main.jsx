@@ -1,9 +1,11 @@
 import React, {useEffect,useRef,useState} from 'react';
 import {createRoot} from 'react-dom/client';
-import {Upload,Play,Pause,Download,WandSparkles,Scissors,Monitor,Smartphone,Square,Film,AlertCircle} from 'lucide-react';
+import {Upload,Play,Pause,Download,WandSparkles,Scissors,Monitor,Smartphone,Square,Film,AlertCircle,Type,Music2,Shapes,Layers3,Clapperboard,Plus,RotateCcw,Volume2,VolumeX,ChevronDown,FolderOpen} from 'lucide-react';
 import './style.css';
 import './link-workflow.css';
 import './editor-workspace.css';
+import './invideo-inspired.css';
+import {makeScenes,splitAt,soundtrackTime} from './sceneUtils.js';
 import {sourceCropRect,outputCanvasSize} from './renderGeometry.js';
 import {detectSilence,keepRanges} from './silence.js';
 import {transcribeEnglish,toSrt,captureHighlightAudio} from './captions.js';
@@ -52,12 +54,44 @@ const activeHighlight=highlights.find(h=>h.id===activeHighlightId)||null;
 const activeCaptions=activeHighlightId?(captionsByHighlight[activeHighlightId]||[]):captions;
 const activeClipLabel=activeHighlight?'Highlight '+(highlights.findIndex(h=>h.id===activeHighlightId)+1):'Full video';
 const [editorTool,setEditorTool]=useState('media'),[timelineZoom,setTimelineZoom]=useState(1);
+const [projectName,setProjectName]=useState('Untitled video'),[selectedLayer,setSelectedLayer]=useState('video');
+const [timelineView,setTimelineView]=useState('scenes'),[sceneMarkers,setSceneMarkers]=useState([]),[sceneThumbs,setSceneThumbs]=useState({});
+const scenes=makeScenes(duration,sceneMarkers),currentScene=scenes.find(c=>current>=c.start&&current<c.end)||scenes[scenes.length-1];
+const [titleLayer,setTitleLayer]=useState(null),[stickerLayer,setStickerLayer]=useState(null);
+const [videoFilter,setVideoFilter]=useState({brightness:100,contrast:100,saturate:100});
+const [musicFile,setMusicFile]=useState(null),[musicUrl,setMusicUrl]=useState(''),[musicDuration,setMusicDuration]=useState(0),[musicVolume,setMusicVolume]=useState(65),[musicEnabled,setMusicEnabled]=useState(true);
+const musicUrlRef=useRef(''),musicPreviewRef=useRef(null);
 const stageRef=useRef(null),[stageSize,setStageSize]=useState({width:0,height:0});
 useEffect(()=>{if(!url||!stageRef.current||typeof ResizeObserver==='undefined')return;const el=stageRef.current;const measure=()=>{const b=el.getBoundingClientRect();setStageSize(old=>(old.width===b.width&&old.height===b.height)?old:{width:b.width,height:b.height})};const observer=new ResizeObserver(measure);observer.observe(el);measure();return()=>observer.disconnect()},[url]);
 const [visualSamples,setVisualSamples]=useState([]),[visualScanning,setVisualScanning]=useState(false),visualJob=useRef(0);
 const audioAnalysisRef=useRef(null),analysisJob=useRef(0);
 useEffect(()=>()=>{if(urlRef.current)URL.revokeObjectURL(urlRef.current)},[]);
-function load(f,autoShorts=false){if(!f)return;autoLinkPending.current=autoShorts;if(!f.type.startsWith('video/')){setMessage('Choose a video file.');return}if(urlRef.current)URL.revokeObjectURL(urlRef.current);const next=URL.createObjectURL(f);urlRef.current=next;setUrl(next);setFile(f);setDuration(0);setStart(0);setEnd(0);setRatio('Original');setMuted(false);setSilences([]);setCutSilence(false);setManualCuts([]);manualRef.current=[];setReview(false);setCutIn(0);setCutOut(0);setShortsBuilding(false);setShortsProgress('');setFocusX(50);setHighlights([]);setActiveHighlightId(null);setCaptionsByHighlight({});setVisualSamples([]);setVisualScanning(false);visualJob.current++;setHighlightStatus('');setTranscribing(false);setCaptions([]);setCaptionsOn(true);setCaptionStatus('');captionJob.current++;setWaveform([]);audioAnalysisRef.current=null;const job=++analysisJob.current;setAudioReading(f.size<350*1024*1024);(f.size<350*1024*1024?detectSilence(f):Promise.reject(new Error('Long-video audio decoding skipped to save memory'))).then(result=>{if(job!==analysisJob.current)return;audioAnalysisRef.current=result;setWaveform(result.peaks||[])}).catch(()=>{if(job===analysisJob.current)setWaveform([])}).finally(()=>{if(job===analysisJob.current)setAudioReading(false)});setMessage('Video loaded. Waiting for metadata…')}
+useEffect(()=>()=>{if(musicUrlRef.current)URL.revokeObjectURL(musicUrlRef.current)},[]);
+useEffect(()=>{
+ if(!url||duration<=0){setSceneThumbs({});return}
+ let cancelled=false;const v=document.createElement('video');v.src=url;v.preload='auto';v.muted=true;v.playsInline=true;
+ const canvas=document.createElement('canvas');canvas.width=170;canvas.height=100;const ctx=canvas.getContext('2d');
+ async function capture(){
+   await new Promise(resolve=>{v.onloadedmetadata=resolve;v.onerror=resolve;if(v.readyState>=1)resolve();});
+   if(!ctx||cancelled)return;
+   const captures={};
+   for(const scene of makeScenes(duration,sceneMarkers).slice(0,12)){
+     if(cancelled)break;
+     try{
+       const moment=Math.min(duration-.08,scene.start+Math.min(.5,(scene.end-scene.start)/2));
+       await new Promise(resolve=>{v.onseeked=resolve;v.onerror=resolve;v.currentTime=Math.max(0,moment);if(Math.abs(v.currentTime-moment)<.001&&v.readyState>=2)resolve()});
+       if(cancelled)break;
+       const crop=sourceCropRect(v.videoWidth,v.videoHeight,canvas.width,canvas.height);
+       ctx.drawImage(v,crop.x,crop.y,crop.width,crop.height,0,0,canvas.width,canvas.height);
+       captures[scene.id]=canvas.toDataURL('image/jpeg',.6);
+       setSceneThumbs({...captures});
+     }catch{ /* source codecs and seeks vary; keep placeholder thumbnail */ }
+   }
+ }
+ capture();
+ return ()=>{cancelled=true;v.pause();v.removeAttribute('src');v.load()};
+},[url,duration,sceneMarkers]);
+function load(f,autoShorts=false){if(!f)return;autoLinkPending.current=autoShorts;if(!f.type.startsWith('video/')){setMessage('Choose a video file.');return}if(urlRef.current)URL.revokeObjectURL(urlRef.current);const next=URL.createObjectURL(f);urlRef.current=next;setUrl(next);setFile(f);setDuration(0);setStart(0);setEnd(0);setSceneMarkers([]);setSceneThumbs({});setTitleLayer(null);setStickerLayer(null);setVideoFilter({brightness:100,contrast:100,saturate:100});setSelectedLayer('video');setRatio('Original');setMuted(false);setSilences([]);setCutSilence(false);setManualCuts([]);manualRef.current=[];setReview(false);setCutIn(0);setCutOut(0);setShortsBuilding(false);setShortsProgress('');setFocusX(50);setHighlights([]);setActiveHighlightId(null);setCaptionsByHighlight({});setVisualSamples([]);setVisualScanning(false);visualJob.current++;setHighlightStatus('');setTranscribing(false);setCaptions([]);setCaptionsOn(true);setCaptionStatus('');captionJob.current++;setWaveform([]);audioAnalysisRef.current=null;const job=++analysisJob.current;setAudioReading(f.size<350*1024*1024);(f.size<350*1024*1024?detectSilence(f):Promise.reject(new Error('Long-video audio decoding skipped to save memory'))).then(result=>{if(job!==analysisJob.current)return;audioAnalysisRef.current=result;setWaveform(result.peaks||[])}).catch(()=>{if(job===analysisJob.current)setWaveform([])}).finally(()=>{if(job===analysisJob.current)setAudioReading(false)});setMessage('Video loaded. Waiting for metadata…')}
 async function importDirectVideoLink(){
  if(importingLink||busy)return;
  let target;
@@ -265,7 +299,36 @@ function selectHighlight(item,autoPlay=false){
 }
 function useHighlight(item){selectHighlight(item,false);timelineRef.current?.scrollIntoView({behavior:'smooth',block:'center'});}
 function previewHighlight(item){selectHighlight(item,true);viewerRef.current?.scrollIntoView({behavior:'smooth',block:'center'});}
-function seek(time){if(video.current){video.current.currentTime=time;setCurrent(time)}}
+function seek(time){if(video.current){video.current.currentTime=time;setCurrent(time)}if(musicPreviewRef.current&&musicDuration>0){try{musicPreviewRef.current.currentTime=soundtrackTime(time,musicDuration)}catch{}}}
+function addSceneSplit(){
+ if(!duration){setMessage('Import a video before splitting scenes.');return}
+ const next=splitAt(sceneMarkers,current,duration);
+ if(!next){setMessage('Move the playhead inside a scene to split it. Maximum 12 scenes.');return}
+ setSceneMarkers(next);setTimelineView('scenes');setMessage('Scene split added at '+fmt(current)+'. Click a scene to trim or export it.');
+}
+function selectScene(scene){
+ video.current?.pause();setActiveHighlightId(null);setReview(false);setStart(scene.start);setEnd(scene.end);seek(scene.start);setSelectedLayer('video');
+}
+function addTitle(preset='heading'){
+ const presets={heading:{text:'Your headline',size:7.2,y:23,color:'#ffffff',background:true},subtitle:{text:'Your subtitle',size:4.3,y:70,color:'#ffffff',background:true},minimal:{text:'A simple title',size:5,y:50,color:'#ffffff',background:false}};
+ const p=presets[preset]||presets.heading;
+ setTitleLayer({...p,x:50,preset});setSelectedLayer('text');setEditorTool('text');
+}
+function addSticker(symbol){
+ setStickerLayer({symbol,x:78,y:24,size:12});setSelectedLayer('sticker');setEditorTool('elements');
+}
+function loadSoundtrack(f){
+ if(!f)return;
+ if(!(f.type.startsWith('audio/')||/\.(mp3|m4a|wav|ogg|aac)$/i.test(f.name))){setMessage('Choose an audio file such as MP3 or WAV.');return}
+ musicPreviewRef.current?.pause();
+ if(musicUrlRef.current)URL.revokeObjectURL(musicUrlRef.current);
+ const next=URL.createObjectURL(f);musicUrlRef.current=next;setMusicFile(f);setMusicUrl(next);setMusicDuration(0);setMusicEnabled(true);setSelectedLayer('music');setMessage('Music added. Adjust its level in the Music panel and preview the result.');
+}
+function removeSoundtrack(){
+ musicPreviewRef.current?.pause();if(musicUrlRef.current)URL.revokeObjectURL(musicUrlRef.current);
+ musicUrlRef.current='';setMusicUrl('');setMusicFile(null);setMusicDuration(0);setSelectedLayer('video');
+}
+
 function toggle(){if(!video.current)return;if(video.current.paused){const segs=review?ranges():[[start,end]];if(!segs.length){setMessage('No footage remains after cuts. Restore a section.');return;}const t=video.current.currentTime;const segment=segs.find(([a,b])=>t>=a&&t<b);if(!segment)seek(segs.find(([a])=>a>=t)?.[0]??segs[0][0]);video.current.play().catch(()=>{});}else video.current.pause()}
 const [w,h]=dimensions;const ar=ratios[ratio]||w/h;
 const cropPosition=focusMode?focusX:50;
@@ -276,20 +339,31 @@ const graphicsEnabled=motionGraphics!=='off';
 async function exportVideo(){
 if(!file||busy)return;if(end<=start){setMessage('End time must be after start time.');return}
 if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream){setMessage('Browser export unsupported. Try a current desktop Chrome browser.');return}
-setBusy(true);setProgress(0);cancelRef.current=false;let ctx=null,source=null,stream=null,recorder=null,exportVideoEl=null;
+setBusy(true);setProgress(0);cancelRef.current=false;let ctx=null,source=null,stream=null,recorder=null,exportVideoEl=null,audioEl=null,musicEl=null;
 try{
  const canvas=document.createElement('canvas');const size=outputCanvasSize(w,h,ar);canvas.width=size.width;canvas.height=size.height;
  const c=canvas.getContext('2d',{alpha:false});if(!c)throw new Error('Canvas unavailable');
  exportVideoEl=document.createElement('video');exportVideoEl.src=url;exportVideoEl.preload='auto';exportVideoEl.playsInline=true;exportVideoEl.muted=true;exportVideoEl.crossOrigin='anonymous';
  await new Promise((resolve,reject)=>{exportVideoEl.onloadedmetadata=resolve;exportVideoEl.onerror=()=>reject(new Error('Could not decode this video'));exportVideoEl.load()});
  // Use a separate media element for audio, routed into a recording stream.
- const audioEl=document.createElement('video');audioEl.src=url;audioEl.preload='auto';audioEl.playsInline=true;audioEl.muted=false;
+ audioEl=document.createElement('video');audioEl.src=url;audioEl.preload='auto';audioEl.playsInline=true;audioEl.muted=false;
  await new Promise((resolve,reject)=>{audioEl.onloadedmetadata=resolve;audioEl.onerror=()=>reject(new Error('Could not decode audio'));audioEl.load()});
- ctx=new (window.AudioContext||window.webkitAudioContext)();source=ctx.createMediaElementSource(audioEl);const dest=ctx.createMediaStreamDestination();source.connect(dest); // Never connect to speakers while exporting.
+ ctx=new (window.AudioContext||window.webkitAudioContext)();source=ctx.createMediaElementSource(audioEl);const dest=ctx.createMediaStreamDestination();
+ const mainGain=ctx.createGain();mainGain.gain.value=muted?0:1;source.connect(mainGain).connect(dest);
+ // A user-supplied soundtrack is mixed locally into the exported recording.
+ if(musicUrl&&musicEnabled&&musicVolume>0){
+   musicEl=document.createElement('audio');musicEl.src=musicUrl;musicEl.preload='auto';musicEl.loop=true;
+   await new Promise((resolve,reject)=>{musicEl.onloadedmetadata=resolve;musicEl.onerror=()=>reject(new Error('Could not decode your music file'));musicEl.load()});
+   const musicGain=ctx.createGain();musicGain.gain.value=musicVolume/100;
+   ctx.createMediaElementSource(musicEl).connect(musicGain).connect(dest);
+ }
+ // Never route export audio to speakers.
  await Promise.all([new Promise(r=>{exportVideoEl.onseeked=r;exportVideoEl.currentTime=start}),new Promise(r=>{audioEl.onseeked=r;audioEl.currentTime=start})]);
  const segments=ranges();
  if(!segments.length)throw new Error('All selected footage is silent. Disable silence cutting to export.');
- const draw=()=>{const vw=exportVideoEl.videoWidth,vh=exportVideoEl.videoHeight;const crop=sourceCropRect(vw,vh,canvas.width,canvas.height,cropPosition);c.drawImage(exportVideoEl,crop.x,crop.y,crop.width,crop.height,0,0,canvas.width,canvas.height);
+ const draw=()=>{const vw=exportVideoEl.videoWidth,vh=exportVideoEl.videoHeight;const crop=sourceCropRect(vw,vh,canvas.width,canvas.height,cropPosition);
+ c.filter=`brightness(${videoFilter.brightness}%) contrast(${videoFilter.contrast}%) saturate(${videoFilter.saturate}%)`;
+ c.drawImage(exportVideoEl,crop.x,crop.y,crop.width,crop.height,0,0,canvas.width,canvas.height);c.filter='none';
  if(graphicsEnabled&&activeHighlight){
    const elapsed=Math.max(0,exportVideoEl.currentTime-start);
    const length=Math.max(.1,end-start);
@@ -306,7 +380,7 @@ try{
  }
  if(captionsOn&&activeCaptions.length){const moment=exportVideoEl.currentTime;const caption=activeCaptions.find(item=>moment>=item.start&&moment<item.end);if(caption?.text){const fontsize=Math.max(16,Math.round(canvas.height*.042));c.font='700 '+fontsize+'px sans-serif';c.textAlign='center';c.textBaseline='middle';const maxWidth=canvas.width*.85;const words=caption.text.split(/\s+/);const lines=[];let line='';for(const word of words){const trial=line?line+' '+word:word;if(c.measureText(trial).width>maxWidth&&line){lines.push(line);line=word}else line=trial;}if(line)lines.push(line);const shown=lines.slice(0,3);const lh=fontsize*1.3;const top=canvas.height*.83-(shown.length-1)*lh/2;c.lineWidth=Math.max(3,fontsize*.22);c.strokeStyle='rgba(0,0,0,.9)';c.fillStyle='#ffffff';shown.forEach((text,i)=>{const y=top+i*lh;c.strokeText(text,canvas.width/2,y,maxWidth);c.fillText(text,canvas.width/2,y,maxWidth)})}}
  };
- draw();stream=canvas.captureStream(30);if(!muted)for(const t of dest.stream.getAudioTracks())stream.addTrack(t);
+ draw();stream=canvas.captureStream(30);if(!muted||(musicEl&&musicEnabled))for(const t of dest.stream.getAudioTracks())stream.addTrack(t);
  const types=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];const mime=types.find(t=>MediaRecorder.isTypeSupported(t));if(!mime)throw new Error('No supported WebM recorder');
  const chunks=[];recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:4000000});recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
  const finished=new Promise((resolve,reject)=>{recorder.onerror=()=>reject(new Error('Recording failed'));recorder.onstop=resolve});recorder.start(500);await ctx.resume();
@@ -314,14 +388,15 @@ try{
  for(const [a,b] of segments){
   if(cancelRef.current)break;
   await Promise.all([new Promise(r=>{exportVideoEl.onseeked=r;exportVideoEl.currentTime=a}),new Promise(r=>{audioEl.onseeked=r;audioEl.currentTime=a})]);
-  await Promise.all([exportVideoEl.play(),audioEl.play()]);
+  if(musicEl){musicEl.currentTime=soundtrackTime(completed,musicEl.duration||0)}
+  await Promise.all([exportVideoEl.play(),audioEl.play(),...(musicEl?[musicEl.play()]:[])]);
   await new Promise(resolve=>{const tick=()=>{if(cancelRef.current||exportVideoEl.currentTime>=b||exportVideoEl.ended){resolve();return}draw();setProgress(Math.min(99,Math.round((completed+Math.max(0,exportVideoEl.currentTime-a))/total*100)));requestAnimationFrame(tick)};requestAnimationFrame(tick)});
-  exportVideoEl.pause();audioEl.pause();completed+=b-a;
+  exportVideoEl.pause();audioEl.pause();musicEl?.pause();completed+=b-a;
  }
- exportVideoEl.pause();audioEl.pause();recorder.stop();await finished;
+ exportVideoEl.pause();audioEl.pause();musicEl?.pause();recorder.stop();await finished;
  if(!cancelRef.current){const blob=new Blob(chunks,{type:'video/webm'});const output=URL.createObjectURL(blob);const a=document.createElement('a');a.href=output;a.download=(file.name.replace(/\.[^.]+$/,'')||'edited')+'-edited.webm';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(output),60000);setMessage('Export complete! Saved as WebM. Export uses real-time recording, so it takes approximately the clip duration.');setProgress(100)}else setMessage('Export canceled.');
- audioEl.src='';
-}catch(e){setMessage('Export failed: '+e.message+' — Try a shorter H.264 MP4 in desktop Chrome.')}finally{if(exportVideoEl){exportVideoEl.pause();exportVideoEl.removeAttribute('src');exportVideoEl.load()}if(recorder&&recorder.state!=='inactive')recorder.stop();stream?.getTracks().forEach(t=>t.stop());if(ctx)await ctx.close().catch(()=>{});setBusy(false)}
+ audioEl.src='';if(musicEl)musicEl.src='';
+}catch(e){setMessage('Export failed: '+e.message+' — Try a shorter H.264 MP4 in desktop Chrome.')}finally{if(exportVideoEl){exportVideoEl.pause();exportVideoEl.removeAttribute('src');exportVideoEl.load()}musicEl?.pause();if(recorder&&recorder.state!=='inactive')recorder.stop();stream?.getTracks().forEach(t=>t.stop());if(ctx)await ctx.close().catch(()=>{});setBusy(false)}
 }
 return <div className="app editor-app">
 <header className="editor-topbar"><div className="logo"><span className="logoicon"><WandSparkles size={19}/></span> AutoEdit <span className="version">STUDIO 2.0 · MULTITRACK</span></div><div className="editor-project"><strong>Sequence 01</strong><small>{file?file.name:"Untitled project"}</small></div><div className="editor-actions"><a href="https://github.com/braie-aep/Autoedits" target="_blank" rel="noreferrer">GitHub</a><button className="top-export" type="button" onClick={()=>setEditorTool('export')}><Download size={15} style={{verticalAlign:'middle',marginRight:5}}/> Export</button></div></header>
@@ -343,7 +418,7 @@ return <div className="app editor-app">
 {editorTool==='effects'&&<section className="panel effects-panel"><div className="panelhead"><span><WandSparkles size={17}/> Effects & framing</span></div><div className="effect-controls"><label>Sequence aspect ratio</label><div className="ratios">{Object.keys(ratios).map(r=><button key={r} disabled={!duration||busy} className={ratio===r?'active':''} onClick={()=>setRatio(r)}>{r}</button>)}</div><label>Horizontal crop focus · {focusX}%<input type="range" min="0" max="100" step="1" value={focusX} disabled={!duration||!focusMode} onChange={e=>setFocusX(Number(e.target.value))}/></label><label className="mute"><input type="checkbox" checked={focusMode} onChange={e=>setFocusMode(e.target.checked)}/> Enable manual focus framing</label><label>Motion graphics preset<select value={motionGraphics} onChange={e=>setMotionGraphics(e.target.value)}><option value="dynamic">Animated title + progress bar</option><option value="off">No graphics</option></select></label><label>Title text<input maxLength={32} value={shortsTitle} onChange={e=>setShortsTitle(e.target.value)}/></label><label className="mute"><input type="checkbox" checked={captionsOn} onChange={e=>setCaptionsOn(e.target.checked)}/> Show captions inside output frame</label><p>Program Monitor shows the actual sequence framing. For 9:16, a landscape source fills the portrait frame; move the horizontal focus slider to choose which part is visible. Captions and graphics stay inside this frame in preview and export.</p></div></section>}
 {editorTool==='export'&&<><section className="panel settings"><div className="panelhead"><span><Monitor size={17}/> Output settings</span></div><div className="label">Aspect ratio</div><div className="ratios">{Object.keys(ratios).map(r=><button key={r} disabled={!duration||busy} className={ratio===r?'active':''} onClick={()=>setRatio(r)}>{r}</button>)}</div><div className="outputinfo"><span>Automatic silence detection</span><button disabled={!duration||busy||analyzing} onClick={analyzeSilence}>{analyzing?'Analyzing…':'Detect silence'}</button></div>{silences.length>0&&<label className="mute"><input type="checkbox" checked={cutSilence} onChange={e=>setCutSilence(e.target.checked)}/> Skip {silences.length} detected quiet sections during export</label>}<label className="mute"><input type="checkbox" checked={muted} disabled={!duration||busy} onChange={e=>setMuted(e.target.checked)}/> Mute exported audio</label><div className="outputinfo"><span>Output format</span><strong>WebM (up to 1280px)</strong></div><div className="outputinfo"><span>Export mode</span><strong>Real-time browser recording</strong></div><button className="primary export" disabled={!duration||busy} onClick={exportVideo}><Download size={17}/>{busy?`Exporting ${progress}%…`:'Export video'}</button>{busy&&<button className="cancel" onClick={()=>{cancelRef.current=true}}>Cancel export</button>}</section><div className="note"><AlertCircle size={17}/><p><b>Current limits:</b> One video at a time. Prompt commands support manual time-range cuts, aspect ratio, trim and mute. Experimental local silence cutting is available. English AI captions are experimental. Highlights, transitions and MP4 export are not yet available. Exports use the browser and may be slow for long footage.</p></div></>}
 </aside>
-<section className="editor-center"><div className="monitor-strip"><strong><i className="monitor-dot"/>PROGRAM MONITOR</strong><span>{ratio} · {fmt(current)} / {fmt(duration)}</span></div><section className="panel viewer" ref={viewerRef}><div className="panelhead"><span><Film size={17}/> Preview</span><span className="meta">{file?file.name:'No video loaded'}</span></div>{url?<div className="stage" ref={stageRef}><div className="program-frame" style={{width:previewWidth+"px",aspectRatio:String(ar)}}><video className="program-video" ref={video} src={url} playsInline muted={muted} onLoadedMetadata={metadata} onTimeUpdate={e=>{const t=e.currentTarget.currentTime;setCurrent(t);if(!e.currentTarget.paused&&review){const segs=ranges();const active=segs.find(([a,b])=>t>=a&&t<b);if(!active){const next=segs.find(([a])=>a>=t-0.08);if(next){e.currentTarget.currentTime=next[0];return;}e.currentTarget.pause();setPlaying(false);return;}if(t>=active[1]-0.06){const next=segs.find(([a])=>a>=active[1]-0.01);if(next){e.currentTarget.currentTime=next[0];return;}}}if(!e.currentTarget.paused&&t>=end&&end>0){e.currentTarget.pause();setPlaying(false)}}} onPlay={()=>setPlaying(true)} onPause={()=>setPlaying(false)} style={{objectPosition:cropPosition+'% center'}}/>{graphicsEnabled&&activeHighlight&&<div className="shorts-graphics-overlay"><span>{shortsTitle||'BEST MOMENTS'}</span><i style={{width:Math.min(100,Math.max(0,(current-start)/Math.max(.1,end-start)*100))+'%'}}/></div>}{captionsOn&&activeCaptions.length>0&&<div className="caption-overlay">{activeCaptions.find(item=>current>=item.start&&current<item.end)?.text||""}</div>}</div></div>:<label className="drop"><Upload size={36}/><strong>Drop in your footage</strong><span>Or click to choose a video from your device</span><small>MP4 / WebM / MOV (browser codec support varies)</small><input type="file" accept="video/*" onChange={e=>load(e.target.files?.[0])}/></label>}<div className="controls"><button disabled={!url} onClick={toggle}>{playing?<Pause size={17}/>:<Play size={17}/>}</button><span>{fmt(current)} / {fmt(duration)}</span><input aria-label="Playhead" type="range" min="0" max={duration||1} step="0.1" value={current} disabled={!duration} onChange={e=>seek(Number(e.target.value))}/><label className="replace">Replace video<input type="file" accept="video/*" onChange={e=>load(e.target.files?.[0])}/></label></div></section><section className="panel timeline" ref={timelineRef}><div className="panelhead"><span><Scissors size={17}/> Sequence timeline</span><div className="timeline-toolbar"><button type="button" title="Zoom out timeline" disabled={timelineZoom<=1} onClick={()=>setTimelineZoom(z=>Math.max(1,z-.5))}>−</button><span>{Math.round(timelineZoom*100)}%</span><button type="button" title="Zoom in timeline" disabled={timelineZoom>=4} onClick={()=>setTimelineZoom(z=>Math.min(4,z+.5))}>+</button><span>{fmt(Math.max(0,end-start))} selected</span></div></div><div className="sequence-scroll" aria-label="Multitrack editor timeline"><div className="sequence-tracks" style={{width:timelineZoom*100+"%"}}><div className="sequence-ruler"><div className="ruler-label">TC</div><div className="ruler-marks"><span>00:00</span><span>{fmt(duration/4)}</span><span>{fmt(duration/2)}</span><span>{fmt(duration*3/4)}</span><span>{fmt(duration)}</span></div></div>
+<section className="editor-center"><div className="monitor-strip"><strong><i className="monitor-dot"/>PROGRAM MONITOR</strong><span>{ratio} · {fmt(current)} / {fmt(duration)}</span></div><section className="panel viewer" ref={viewerRef}><div className="panelhead"><span><Film size={17}/> Preview</span><span className="meta">{file?file.name:'No video loaded'}</span></div>{url?<div className="stage" ref={stageRef}><div className="program-frame" style={{width:previewWidth+"px",aspectRatio:String(ar)}}><video className="program-video" ref={video} src={url} playsInline muted={muted} onLoadedMetadata={metadata} onTimeUpdate={e=>{const t=e.currentTarget.currentTime;setCurrent(t);const music=musicPreviewRef.current;if(music&&musicDuration>0&&!music.paused&&Math.abs(music.currentTime-soundtrackTime(t,musicDuration))>.7){music.currentTime=soundtrackTime(t,musicDuration)}if(!e.currentTarget.paused&&review){const segs=ranges();const active=segs.find(([a,b])=>t>=a&&t<b);if(!active){const next=segs.find(([a])=>a>=t-0.08);if(next){e.currentTarget.currentTime=next[0];return;}e.currentTarget.pause();setPlaying(false);return;}if(t>=active[1]-0.06){const next=segs.find(([a])=>a>=active[1]-0.01);if(next){e.currentTarget.currentTime=next[0];return;}}}if(!e.currentTarget.paused&&t>=end&&end>0){e.currentTarget.pause();setPlaying(false)}}} onPlay={()=>{setPlaying(true);const m=musicPreviewRef.current;if(m&&musicEnabled){if(musicDuration>0)m.currentTime=soundtrackTime(video.current?.currentTime||0,musicDuration);m.play().catch(()=>{})}}} onPause={()=>{setPlaying(false);musicPreviewRef.current?.pause()}} onClick={()=>setSelectedLayer('video')} style={{objectPosition:cropPosition+'% center',filter:`brightness(${videoFilter.brightness}%) contrast(${videoFilter.contrast}%) saturate(${videoFilter.saturate}%)`}}/>{graphicsEnabled&&activeHighlight&&<div className="shorts-graphics-overlay"><span>{shortsTitle||'BEST MOMENTS'}</span><i style={{width:Math.min(100,Math.max(0,(current-start)/Math.max(.1,end-start)*100))+'%'}}/></div>}{captionsOn&&activeCaptions.length>0&&<div className="caption-overlay">{activeCaptions.find(item=>current>=item.start&&current<item.end)?.text||""}</div>}</div></div>:<label className="drop"><Upload size={36}/><strong>Drop in your footage</strong><span>Or click to choose a video from your device</span><small>MP4 / WebM / MOV (browser codec support varies)</small><input type="file" accept="video/*" onChange={e=>load(e.target.files?.[0])}/></label>}<div className="controls"><button disabled={!url} onClick={toggle}>{playing?<Pause size={17}/>:<Play size={17}/>}</button><span>{fmt(current)} / {fmt(duration)}</span><input aria-label="Playhead" type="range" min="0" max={duration||1} step="0.1" value={current} disabled={!duration} onChange={e=>seek(Number(e.target.value))}/><label className="replace">Replace video<input type="file" accept="video/*" onChange={e=>load(e.target.files?.[0])}/></label></div></section><section className="panel timeline" ref={timelineRef}><div className="panelhead"><span><Scissors size={17}/> Sequence timeline</span><div className="timeline-toolbar"><button type="button" title="Zoom out timeline" disabled={timelineZoom<=1} onClick={()=>setTimelineZoom(z=>Math.max(1,z-.5))}>−</button><span>{Math.round(timelineZoom*100)}%</span><button type="button" title="Zoom in timeline" disabled={timelineZoom>=4} onClick={()=>setTimelineZoom(z=>Math.min(4,z+.5))}>+</button><span>{fmt(Math.max(0,end-start))} selected</span></div></div><div className="sequence-scroll" aria-label="Multitrack editor timeline"><div className="sequence-tracks" style={{width:timelineZoom*100+"%"}}><div className="sequence-ruler"><div className="ruler-label">TC</div><div className="ruler-marks"><span>00:00</span><span>{fmt(duration/4)}</span><span>{fmt(duration/2)}</span><span>{fmt(duration*3/4)}</span><span>{fmt(duration)}</span></div></div>
 <div className="seq-track"><div className="seq-label"><strong>V1</strong><span>Video</span></div><div className="seq-lane" onClick={e=>{if(!duration)return;const box=e.currentTarget.getBoundingClientRect();seek(clamp((e.clientX-box.left)/box.width*duration,0,duration))}}>{url?<div className="seq-clip" style={{left:(duration?start/duration*100:0)+"%",width:(duration?(end-start)/duration*100:0)+"%"}}><span className="seq-clip-thumb"/><span>{file?.name||"Source clip"}</span></div>:<span className="seq-hint">Import a video to begin</span>}{manualCuts.map(([a,b],i)=><div className="seq-cut" key={"c"+i} style={{left:(duration?a/duration*100:0)+"%",width:(duration?(b-a)/duration*100:0)+"%"}}/>)}{cutSilence&&silences.map(([a,b],i)=><div className="seq-cut silence" key={"s"+i} style={{left:(duration?a/duration*100:0)+"%",width:(duration?(b-a)/duration*100:0)+"%"}}/>)}<div className="seq-playhead" style={{left:(duration?current/duration*100:0)+"%"}}/></div></div>
 <div className="seq-track"><div className="seq-label"><strong>G1</strong><span>Graphics</span></div><div className="seq-lane" onClick={e=>{if(!duration)return;const box=e.currentTarget.getBoundingClientRect();seek(clamp((e.clientX-box.left)/box.width*duration,0,duration))}}>{graphicsEnabled&&activeHighlight&&<div className="seq-clip graphic-clip" style={{left:(duration?start/duration*100:0)+"%",width:(duration?(end-start)/duration*100:0)+"%"}}>{shortsTitle||"TITLE"}</div>}<div className="seq-playhead" style={{left:(duration?current/duration*100:0)+"%"}}/></div></div>
 <div className="seq-track"><div className="seq-label"><strong>T1</strong><span>Captions</span></div><div className="seq-lane" onClick={e=>{if(!duration)return;const box=e.currentTarget.getBoundingClientRect();seek(clamp((e.clientX-box.left)/box.width*duration,0,duration))}}>{captionsOn&&activeCaptions.map((c,i)=><div key={i} className="seq-cue" title={c.text} style={{left:(duration?c.start/duration*100:0)+"%",width:(duration?Math.max(0,c.end-c.start)/duration*100:0)+"%"}}>{c.text}</div>)}<div className="seq-playhead" style={{left:(duration?current/duration*100:0)+"%"}}/></div></div>
