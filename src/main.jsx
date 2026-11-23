@@ -55,6 +55,7 @@ const [autoCaptionShorts,setAutoCaptionShorts]=useState(true),[shortsProgress,se
 const activeHighlight=highlights.find(h=>h.id===activeHighlightId)||null;
 const activeCaptions=activeHighlightId?(captionsByHighlight[activeHighlightId]||[]):captions;
 const activeClipLabel=activeHighlight?'Highlight '+(highlights.findIndex(h=>h.id===activeHighlightId)+1):'Full video';
+const [timelineView,setTimelineView]=useState('scenes'),[sceneMarkers,setSceneMarkers]=useState([]),[sceneThumbs,setSceneThumbs]=useState({});
 const [editorTool,setEditorTool]=useState('media'),[timelineZoom,setTimelineZoom]=useState(1);
 const [previewShare,setPreviewShare]=useState(54),[libraryWidth,setLibraryWidth]=useState(276),[propertiesWidth,setPropertiesWidth]=useState(250);
 const workspaceRef=useRef(null),centerRef=useRef(null),sequenceScrollRef=useRef(null),activeResizeRef=useRef(null),scrollTimerRef=useRef(null);
@@ -113,7 +114,6 @@ function resizeWithKeyboard(e,kind){
 
 const [projectName,setProjectName]=useState('Untitled video'),[selectedLayer,setSelectedLayer]=useState('video');
 
-const [timelineView,setTimelineView]=useState('scenes'),[sceneMarkers,setSceneMarkers]=useState([]),[sceneThumbs,setSceneThumbs]=useState({});
 const scenes=makeScenes(duration,sceneMarkers),currentScene=scenes.find(c=>current>=c.start&&current<c.end)||scenes[scenes.length-1];
 const [titleLayer,setTitleLayer]=useState(null),[stickerLayer,setStickerLayer]=useState(null);
 const [videoFilter,setVideoFilter]=useState({brightness:100,contrast:100,saturate:100});
