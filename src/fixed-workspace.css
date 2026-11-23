@@ -1,0 +1,125 @@
+/* AutoEdit Studio 3.1 — fixed, draggable, one-screen editing workspace.
+   Only asset panels and a zoomed track can scroll; the page never moves. */
+html,body,#root{height:100%;max-height:100%;overflow:hidden}
+body{overscroll-behavior:none}
+.editor-app{height:100vh;height:100dvh;min-height:0;max-height:100vh;max-height:100dvh;overflow:hidden;width:100%;display:flex;flex-direction:column}
+.editor-app .invideo-topbar{flex:0 0 62px}
+.editor-app .editor-statusbar{flex:0 0 32px;min-height:32px;overflow:hidden;white-space:nowrap}
+.editor-app .invideo-workspace.workspace-lock{
+  display:grid;flex:1 1 0;height:auto;min-height:0;max-height:none;min-width:0;
+  width:100%;overflow:hidden;gap:0;padding:0;margin:0;
+  grid-template-columns:72px minmax(210px,var(--library-width,276px)) 8px minmax(290px,1fr) 8px minmax(205px,var(--properties-width,250px));
+  grid-template-rows:minmax(0,1fr)
+}
+.invideo-workspace .tool-rail{min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.invideo-workspace .tool-inspector{min-height:0;min-width:0;max-height:100%;overflow-y:auto;overscroll-behavior:contain}
+.invideo-workspace .studio-properties{min-height:0;max-height:100%;overflow-y:auto;overscroll-behavior:contain}
+.invideo-workspace .resizable-editor-center{
+  display:grid;min-height:0;height:100%;min-width:0;max-height:100%;overflow:hidden;
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:51px minmax(0,var(--preview-share,54fr)) 10px minmax(0,var(--timeline-share,46fr))
+}
+.resizable-editor-center>.monitor-strip{grid-row:1;min-width:0;overflow:hidden}
+.invideo-workspace .resizable-editor-center>.viewer{
+  grid-row:2;min-height:0;max-height:none;height:100%;width:100%;flex:none;overflow:hidden
+}
+.invideo-workspace .resizable-editor-center>.viewer .stage{
+  flex:1 1 0;min-height:0;height:auto;max-height:none;overflow:hidden
+}
+.invideo-workspace .resizable-editor-center>.viewer .controls{flex:0 0 52px;min-height:0;max-height:52px}
+.invideo-workspace .resizable-editor-center>.timeline{
+  grid-row:4;min-height:0;max-height:none;height:100%;width:100%;flex:none;
+  overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain
+}
+.invideo-workspace .resizable-editor-center>.timeline .panelhead{position:sticky;top:0;z-index:8}
+.workspace-row-handle,.workspace-column-handle{
+  z-index:12;display:flex;align-items:center;justify-content:center;
+  touch-action:none;user-select:none;-webkit-user-select:none;
+  background:#f4f5fa;transition:background .1s
+}
+.workspace-row-handle{grid-row:3;cursor:row-resize;height:10px;border-top:1px solid #dfe4ed;border-bottom:1px solid #dfe4ed}
+.workspace-row-handle>span{width:62px;height:3px;border-radius:3px;background:#c1c7d8}
+.workspace-column-handle{cursor:col-resize;min-width:8px;width:8px;border-left:1px solid #e4e7f1;border-right:1px solid #e4e7f1}
+.workspace-column-handle>span{height:48px;width:3px;border-radius:3px;background:#c1c7d8}
+.workspace-row-handle:hover,.workspace-row-handle:focus-visible,.workspace-column-handle:hover,.workspace-column-handle:focus-visible{background:#e8e3ff;outline:none}
+.workspace-row-handle:hover>span,.workspace-column-handle:hover>span,.workspace-row-handle:focus-visible>span,.workspace-column-handle:focus-visible>span{background:#775fec}
+.workspace-row-handle:active,.workspace-column-handle:active{background:#ded5ff}
+.invideo-workspace .editor-center .timeline.scenes-mode .scene-storyboard{padding:8px 12px 9px}
+.invideo-workspace .editor-center .timeline.scenes-mode .scene-row{min-height:107px;max-height:132px;gap:9px;padding-bottom:7px}
+.invideo-workspace .editor-center .timeline.scenes-mode .scene-thumb{height:68px}
+.invideo-workspace .editor-center .timeline.scenes-mode .scene-card{flex-basis:130px;min-width:130px}
+.invideo-workspace .editor-center .timeline.scenes-mode .storyboard-split{min-width:70px;flex-basis:70px}
+.storyboard-filmstrip{
+  height:67px;position:relative;overflow:hidden;cursor:crosshair;margin-bottom:10px;
+  background:repeating-linear-gradient(90deg,#dee4f0 0 38px,#d0d9ea 38px 40px);
+  border:1px solid #d3dae8;border-radius:6px;isolation:isolate
+}
+.storyboard-frame{position:absolute;top:0;bottom:0;overflow:hidden;border-right:1px solid #fff9;min-width:0}
+.storyboard-frame img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none}
+.storyboard-frame span,.seq-frame-tile span{position:absolute;bottom:2px;left:2px;background:#131b2db7;color:#fff;padding:1px 3px;border-radius:2px;font-size:9px;font-variant-numeric:tabular-nums;pointer-events:none}
+.storyboard-filmstrip-playhead{position:absolute;top:0;bottom:0;width:2px;background:#ff616b;z-index:4;pointer-events:none;filter:drop-shadow(0 0 1px #fff)}
+.frame-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#66778f;font-size:11px}
+.storyboard-audio{height:43px;min-height:43px;margin-top:5px;gap:8px;overflow:hidden}
+.storyboard-audio.source-audio{background:#e5f7ef;border-color:#c4e5d3;color:#27735d}
+.storyboard-audio.soundtrack-audio{background:#f1eeff;border-color:#ded4ff;color:#6854b4}
+.storyboard-audio>span{flex:0 0 auto;max-width:126px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px}
+.storyboard-audio svg.storyboard-source-waveform{flex:1 1 0;min-width:0;display:block;width:100%;height:38px;opacity:.87}
+.storyboard-source-waveform rect{fill:#2b9675}
+.storyboard-audio.soundtrack-audio .storyboard-source-waveform rect{fill:#8d70e5}
+.waveform-unavailable{display:block;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#788b8a;font-size:10px}
+.invideo-workspace .seq-track.video-track{height:89px;min-height:89px}
+.seq-filmstrip{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none;background:repeating-linear-gradient(90deg,#d0ddf5 0 40px,#c1d0ea 40px 42px)}
+.seq-frame-tile{position:absolute;inset-block:0;overflow:hidden;min-width:0;border-right:1px solid #fff7}
+.seq-frame-tile img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none}
+.seq-frame-tile span{bottom:5px;font-size:9px}
+.invideo-workspace .seq-track.video-track .seq-clip{
+  background:transparent;border:2px solid #6d8fe4;box-shadow:inset 0 0 0 1px #ffffff85;
+  z-index:2;pointer-events:none;top:0;bottom:0;color:white;align-items:flex-start;padding:4px 7px;
+  text-shadow:0 1px 5px #000,0 0 2px #000
+}
+.seq-track.video-track .seq-clip-thumb{display:none}
+.invideo-workspace .seq-track.audio-track{height:68px;min-height:68px}
+.invideo-workspace .seq-track.audio-track .seq-clip.audio-clip{z-index:1;opacity:.58;padding-top:5px;align-items:flex-start}
+.invideo-workspace .seq-track.audio-track .seq-wave{z-index:2;position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.invideo-workspace .seq-track.audio-track .seq-wave rect{fill:#218e6c}
+.invideo-workspace .seq-track.audio-track .seq-wave.music-wave rect{fill:#775fd0}
+.invideo-workspace .seq-track .seq-playhead{z-index:5}
+.invideo-workspace .sequence-scroll.shown{
+  display:block;overflow-x:auto;overflow-y:hidden;max-width:calc(100% - 24px);height:auto;
+  margin:9px 12px 0;overscroll-behavior-x:contain;scrollbar-color:#aeb9cc #edf1fa
+}
+.invideo-workspace .timeline.layers-mode .timefields,.invideo-workspace .timeline.layers-mode .cut-tools{padding-top:8px;padding-bottom:8px}
+.invideo-workspace .timeline.layers-mode .cut-tools>p{margin:4px 0;font-size:11px}
+.invideo-workspace .timeline-toolbar{gap:8px}
+.invideo-workspace .timeline-toolbar>span{font-size:10px;color:#697b92}
+.invideo-workspace .timeline-toolbar button{width:24px;height:24px;padding:0}
+.invideo-workspace .timeline.scenes-mode .timeline-toolbar button,.invideo-workspace .timeline.scenes-mode .timeline-toolbar>span:first-of-type{opacity:.65}
+@media (max-width:1100px){
+ .editor-app .invideo-workspace.workspace-lock{
+   grid-template-columns:62px minmax(210px,var(--library-width,250px)) 8px minmax(300px,1fr);
+ }
+ .invideo-workspace .properties-handle,.invideo-workspace .studio-properties{display:none}
+}
+@media (max-width:735px){
+ .editor-app .invideo-topbar{flex-basis:55px}
+ .editor-app .invideo-workspace.workspace-lock{
+   display:grid;height:auto;min-height:0;max-height:none;overflow:hidden;
+   grid-template-columns:minmax(0,1fr);
+   grid-template-rows:54px minmax(140px,24vh) minmax(0,1fr)
+ }
+ .invideo-workspace .tool-rail{
+   grid-row:1;min-height:0;max-height:none;position:relative;top:auto;
+   flex-direction:row;overflow-x:auto;overflow-y:hidden
+ }
+ .invideo-workspace .tool-inspector{grid-row:2;height:100%;min-height:0;max-height:none;overflow-y:auto}
+ .invideo-workspace .workspace-column-handle{display:none}
+ .invideo-workspace .resizable-editor-center{grid-row:3;min-height:0;height:100%;grid-template-rows:43px minmax(0,var(--preview-share,54fr)) 10px minmax(0,var(--timeline-share,46fr))}
+ .invideo-workspace .editor-center .viewer{min-height:0;max-height:none;height:100%;flex:none}
+ .invideo-workspace .editor-center .timeline{min-height:0;max-height:none;height:100%;flex:none}
+ .invideo-workspace .editor-center .stage{min-height:0}
+ .invideo-workspace .editor-center .viewer .controls{flex:0 0 45px}
+ .invideo-workspace .monitor-strip{min-height:43px;height:43px}
+ .invideo-workspace .timeline .studio-timeline-toolbar{padding:6px}
+ .invideo-workspace .timeline .scene-edit-actions button{font-size:10px;padding:6px}
+ .editor-app .editor-statusbar{min-height:26px;flex-basis:26px}
+}
