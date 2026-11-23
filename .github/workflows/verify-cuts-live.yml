@@ -1,0 +1,27 @@
+name: Check published Cuts inspector fix
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/verify-cuts-live.yml"
+jobs:
+  public-site:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check public GitHub Pages matches Cuts fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://braie-aep.github.io/Autoedits"
+          expected="f4b9045c422cc45775abf9b85ca1e019ddfaec45"
+          for n in $(seq 1 24); do
+            if curl -fsSL --max-time 15 "$base/version.json?sha=$expected&n=$n" -o /tmp/autoedit-version.json; then
+              cat /tmp/autoedit-version.json
+              if node -e 'const v=require("/tmp/autoedit-version.json");if(v.commit!==process.argv[1]||v.ui!=="fixed-workspace-3.1")process.exit(1)' "$expected"; then
+                echo "PASS: GitHub Pages is serving the new Cuts-in-side-inspector UI"
+                exit 0
+              fi
+            fi
+            sleep 5
+          done
+          echo "::error::GitHub Pages is not serving latest Cuts inspector fix"
+          exit 1
