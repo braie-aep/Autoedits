@@ -25,6 +25,16 @@ try {
   await page.locator('.project-import input[type=file]').setInputFiles('/tmp/autoedit-smoke.mp4');
   await page.locator('.program-video').waitFor();
   await page.waitForFunction(()=>document.querySelector('.program-video')?.videoWidth>0);
+  // User-requested placement: all three controls belong BESIDE the title
+  // in the upper "Your video timeline" header, not a second toolbar row.
+  assert.equal(await page.locator('.studio-timeline-toolbar').count(),0,'There must not be a separate Scenes/Layers/Cuts row');
+  const titleBox=await page.locator('.timeline-main-header .timeline-heading-title').boundingBox();
+  const buttonBoxes=await Promise.all(['Scenes','Layers','Cuts'].map(async name=>page.locator('.timeline-main-header').getByRole('button',{name,exact:name!=='Cuts'}).boundingBox()));
+  assert.ok(titleBox&&buttonBoxes.every(Boolean),'Timeline header and all three controls must be visible');
+  assert.ok(buttonBoxes.every(b=>Math.abs((b.y+b.height/2)-(titleBox.y+titleBox.height/2))<15),'Scenes, Layers and Cuts must be aligned beside the timeline title on the same row');
+  assert.ok(buttonBoxes[0].x>=titleBox.x+titleBox.width-2,'Scenes must appear after the timeline title');
+  assert.ok(buttonBoxes[0].x<buttonBoxes[1].x&&buttonBoxes[1].x<buttonBoxes[2].x,'Controls must appear in order Scenes, Layers, Cuts');
+  console.log('Timeline header placement passed: title, Scenes, Layers and Cuts share the top row');
   // Cuts should be opened beside Scenes/Layers, never displayed below the tracks.
   assert.equal(await page.locator('.timeline .cut-tools').count(),0,'Cut controls must not be below the timeline');
   assert.equal(await page.locator('.timeline .timefields').count(),0,'Trim fields must not be below the timeline');
