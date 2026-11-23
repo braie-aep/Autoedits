@@ -39,7 +39,7 @@ jobs:
 
       - name: Stamp and verify the Studio 2.0 release
         run: |
-          node -e 'const fs=require("node:fs");fs.writeFileSync("dist/version.json",JSON.stringify({app:"AutoEdit Studio",ui:"multitrack-2.0",commit:process.env.GITHUB_SHA,builtAt:new Date().toISOString()},null,2)+"\\n")'
+          node -e 'const fs=require("node:fs");fs.writeFileSync("dist/version.json",JSON.stringify({app:"AutoEdit Studio",ui:"multitrack-2.0",commit:process.env.GITHUB_SHA,builtAt:new Date().toISOString()},null,2))'
           grep -Rq "STUDIO 2.0" dist/assets/ || { echo "::error::New editor UI was not included in the release"; exit 1; }
           test -f dist/index.html
           echo "Publishing multitrack editor from commit ${GITHUB_SHA}"
