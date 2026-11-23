@@ -1,0 +1,27 @@
+name: Verify AutoEdit Studio 3.1 on GitHub Pages
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/studio31-public-check.yml"
+jobs:
+  check-public:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify current GitHub Pages version
+        run: |
+          set -euo pipefail
+          base="https://braie-aep.github.io/Autoedits"
+          expected="619c114bbe72cd914f87e620b96434cbf293149d"
+          for n in $(seq 1 24); do
+            echo "Public release check $n"
+            if curl -fsSL --max-time 15 "$base/version.json?build=$expected&n=$n" -o /tmp/autoedit-version.json; then
+              cat /tmp/autoedit-version.json
+              if node -e 'const x=require("/tmp/autoedit-version.json");if(x.ui!=="fixed-workspace-3.1"||x.commit!==process.argv[1])process.exit(1)' "$expected"; then
+                echo "PASS GitHub Pages is publicly serving fixed-workspace-3.1 at $expected"
+                exit 0
+              fi
+            fi
+            sleep 5
+          done
+          echo "::error::Public GitHub Pages has not published Studio 3.1"
+          exit 1
