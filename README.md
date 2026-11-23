@@ -1,12 +1,16 @@
-# AutoEdit Studio 3.0 — browser video editor
+# AutoEdit Studio 3.1 — browser video editor
 
 **Main website:** https://braie-aep.github.io/Autoedits/
 
 A free-first, GitHub-hosted video-editing workspace inspired by the *workflow* of online editors like InVideo. The design and code are AutoEdit's own. Built in React + Vite.
 
-## Studio 3.0 editing workspace
+## Studio 3.1 fixed, resizable editing workspace
 
 - Clean canvas-first interface with Media, Text, Music, Elements, Captions, Shorts, AI Edit, and Canvas panels
+- Single viewport workspace: the main page does **not** scroll vertically or horizontally; only individual tool libraries and zoomed timelines have their own scrolling.
+- Drag the divider between the Program Monitor and timeline to make either area larger; drag either side-panel edge to change its width. Keyboard-accessible dividers support arrow keys.
+- The Video (V1) timeline shows sampled **real video-frame thumbnails at the corresponding timecodes**. Increasing zoom from 1× to 16× requests frame samples from a narrower visible time range; horizontal movement scrolls **inside** the timeline only.
+- Original audio (A1) and imported music (A2) show actual decoded audio waveforms when the media can be decoded and has not exceeded local analysis limits. For very large media or unsupported codecs, waveform detail may be unavailable; no fake waveform is shown.
 - Storyboard of scene thumbnails, nondestructive split-at-playhead markers, and scene selection
 - Layers view with V1 video, A1 source audio, A2 imported music, text/graphics and caption tracks
 - Editable heading, subtitle, or minimal text layers; position, size, color and background controls
@@ -20,7 +24,7 @@ A free-first, GitHub-hosted video-editing workspace inspired by the *workflow* o
 
 This is an **editor prototype, not a complete InVideo replacement**. A project currently uses one source video. Scene markers divide the original source for **selecting, trimming and exporting a scene**, not a fully reorderable multi-source sequence. Music repeats across the source timeline and is mixed during browser export. Video exports are WebM through real-time browser recording, not MP4. Titles, stickers, color adjustments and audio are rendered with the selected video; automated highlights and captions remain experimental. Review any generated clip before posting.
 
-The UI passes browser automated tests, but features can vary across codecs, browser versions, and machines.
+The UI passes browser automated tests, including a fixed 1536×960 viewport, draggable preview/timeline sizing and video-frame thumbnails, but features can vary across codecs, browser versions, and machines.
 
 ## GitHub Pages and private import backend
 
