@@ -135,3 +135,6 @@ body{background:var(--work-bg)}
  .editor-center .timeline{height:400px;max-height:none;flex:0 0 400px}
  .editor-statusbar{height:auto;flex-wrap:wrap;gap:3px}
 }
+
+.seq-label .seq-mute{font-size:9px;padding:2px 4px;min-width:42px;border-radius:4px;background:#283f39;border:1px solid #468071;color:#b3ebd9;cursor:pointer}
+.seq-label .seq-mute:hover{background:#39635a}
