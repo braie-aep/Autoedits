@@ -37,6 +37,13 @@ jobs:
       - name: Build website
         run: npm run build
 
+      - name: Stamp and verify the Studio 2.0 release
+        run: |
+          node -e 'const fs=require("node:fs");fs.writeFileSync("dist/version.json",JSON.stringify({app:"AutoEdit Studio",ui:"multitrack-2.0",commit:process.env.GITHUB_SHA,builtAt:new Date().toISOString()},null,2))'
+          grep -Rq "STUDIO 2.0" dist/assets/ || { echo "::error::New editor UI was not included in the release"; exit 1; }
+          test -f dist/index.html
+          echo "Publishing multitrack editor from commit ${GITHUB_SHA}"
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
@@ -48,3 +55,21 @@ jobs:
       - name: Deploy website
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Verify GitHub Pages has the newly released version
+        env:
+          PUBLIC_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          if [ -z "$PUBLIC_URL" ]; then
+            echo "::error::GitHub Pages returned no public URL"; exit 1
+          fi
+          for n in $(seq 1 18); do
+            if curl --fail --silent --show-error --location --max-time 20 "${PUBLIC_URL%/}/version.json?sha=${GITHUB_SHA}&check=${n}" | grep -q "${GITHUB_SHA}"; then
+              echo "GitHub Pages serves Studio 2.0 commit ${GITHUB_SHA}"
+              exit 0
+            fi
+            echo "Waiting for GitHub Pages to serve commit ${GITHUB_SHA} (check ${n}/18)"
+            sleep 5
+          done
+          echo "::error::Published site is not serving the expected Studio 2.0 revision"
+          exit 1
