@@ -3,7 +3,7 @@ import {spawn} from 'node:child_process';
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 
-const server=spawn('npm',['run','dev','--','--host','127.0.0.1','--port','4173','--strictPort'],{stdio:'pipe'});
+const server=spawn('npm',['run','dev','--','--host','127.0.0.1','--port','4173','--strictPort'],{stdio:'pipe',detached:true});
 server.stdout.on('data',data=>process.stdout.write(data));
 server.stderr.on('data',data=>process.stderr.write(data));
 let browser;
@@ -17,6 +17,7 @@ try {
   assert.ok(ok,'Vite dev server must start');
   browser=await chromium.launch({headless:true,args:['--no-sandbox']});
   const page=await browser.newPage({viewport:{width:1500,height:900},deviceScaleFactor:1});
+  page.setDefaultTimeout(15000);
   const jsErrors=[];page.on('pageerror',err=>jsErrors.push(err.message));
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
   await page.locator('.invideo-topbar .version').getByText('STUDIO 3.0',{exact:true}).waitFor();
@@ -52,5 +53,6 @@ try {
   console.log('Studio 3.0 browser smoke passed: tools, video, 9:16, text, element, music, storyboard');
 } finally {
   if(browser)await browser.close();
-  server.kill('SIGTERM');
+  try{process.kill(-server.pid,'SIGTERM')}catch{server.kill('SIGTERM')}
+  server.stdout.destroy();server.stderr.destroy();
 }
