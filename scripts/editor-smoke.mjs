@@ -45,7 +45,7 @@ try {
   assert.ok(afterHeight>beforeHeight+20,'Dragging divider upward must enlarge the timeline');
   assert.ok((await page.locator('.viewer').boundingBox()).height<420,'Canvas preview must shrink when timeline enlarges');
   console.log('Workspace drag regression passed: one-page shell, resize increases timeline area');
-  await page.waitForFunction(()=>document.querySelectorAll('.storyboard-frame img').length>=3,{timeout:25000});
+  await page.waitForFunction(()=>document.querySelectorAll('.storyboard-frame img').length>=3,null,{timeout:25000});
   console.log('Frame strip captures decoded source images');
   assert.ok(scene.height<175,'The selected scene must be a thumbnail, not a page-height overlay');
   assert.ok(scene.y>=timeline.y&&scene.y+scene.height<=timeline.y+timeline.height+5,'Scene card must remain inside the timeline');
@@ -80,7 +80,7 @@ try {
   await page.getByRole('button',{name:'Layers',exact:true}).click();
   for(let i=0;i<3;i++)await page.getByRole('button',{name:'Zoom in timeline'}).click();
   assert.ok((await page.locator('.sequence-scroll').evaluate(el=>el.scrollWidth))>(await page.locator('.sequence-scroll').evaluate(el=>el.clientWidth))*5,'Zoom must make the timeline detailed and horizontally pannable inside its own panel');
-  await page.waitForFunction(()=>document.querySelectorAll('.seq-frame-tile img').length>=3,{timeout:25000});
+  await page.waitForFunction(()=>document.querySelectorAll('.seq-frame-tile img').length>=3,null,{timeout:25000});
   assert.ok(await page.locator('.seq-frame-tile').count()>2,'Zoomed V1 track must contain frames at actual timestamps');
   await page.locator('.sequence-scroll').evaluate(el=>el.scrollLeft=Math.max(0,el.scrollWidth-el.clientWidth));
   await page.waitForFunction(()=>{const el=document.querySelector('.sequence-scroll');return el&&el.scrollLeft>100;});
