@@ -1,9 +1,6 @@
 name: Check public GitHub Pages Studio version
 
 on:
-  pull_request:
-    paths:
-      - ".github/workflows/pages-live-check.yml"
   workflow_dispatch:
 
 jobs:
