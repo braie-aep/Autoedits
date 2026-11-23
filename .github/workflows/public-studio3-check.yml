@@ -1,4 +1,4 @@
-name: Verify live GitHub Pages Studio 3.0
+name: Verify live GitHub Pages Studio 3.1
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ jobs:
   verify-public-site:
     runs-on: ubuntu-latest
     steps:
-      - name: Check actual GitHub Pages URL for Studio 3.0
+      - name: Check actual GitHub Pages URL for Studio 3.1
         shell: bash
         run: |
           set -euo pipefail
@@ -21,14 +21,14 @@ jobs:
             echo "Checking public website ($attempt of 18)"
             if curl -fsSL --max-time 18 "${url}/version.json?run=${GITHUB_RUN_ID}&attempt=${attempt}" -o /tmp/autoedit-version.json; then
               cat /tmp/autoedit-version.json
-              if node -e 'const x=require("/tmp/autoedit-version.json");if(x.ui!=="scene-studio-3.0"||x.commit!==process.argv[1])process.exit(1)' "$expected_sha"; then
-                if curl -fsSL --max-time 18 "${url}/?check=${GITHUB_RUN_ID}&attempt=${attempt}" | grep -q "AutoEdit Studio 3.0"; then
-                  echo "PASS: Public GitHub Pages serves Studio 3.0"
+              if node -e 'const x=require("/tmp/autoedit-version.json");if(x.ui!=="fixed-workspace-3.1"||x.commit!==process.argv[1])process.exit(1)' "$expected_sha"; then
+                if curl -fsSL --max-time 18 "${url}/?check=${GITHUB_RUN_ID}&attempt=${attempt}" | grep -q "AutoEdit Studio 3.1"; then
+                  echo "PASS: Public GitHub Pages serves Studio 3.1"
                   exit 0
                 fi
               fi
             fi
             sleep 5
           done
-          echo "::error::Public Pages site has not published Studio 3.0"
+          echo "::error::Public Pages site has not published Studio 3.1"
           exit 1
