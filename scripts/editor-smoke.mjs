@@ -16,7 +16,7 @@ try {
   }
   assert.ok(ok,'Vite dev server must start');
   browser=await chromium.launch({headless:true,args:['--no-sandbox']});
-  const page=await browser.newPage({viewport:{width:1500,height:900},deviceScaleFactor:1});
+  const page=await browser.newPage({viewport:{width:1536,height:960},deviceScaleFactor:1});
   page.setDefaultTimeout(15000);
   const jsErrors=[];page.on('pageerror',err=>jsErrors.push(err.message));
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
@@ -25,6 +25,22 @@ try {
   await page.locator('.project-import input[type=file]').setInputFiles('/tmp/autoedit-smoke.mp4');
   await page.locator('.program-video').waitFor();
   await page.waitForFunction(()=>document.querySelector('.program-video')?.videoWidth>0);
+  // Regression: the legacy unscoped `.selected` rule used to absolutely position
+  // the selected scene card and selected layer button across the whole editor.
+  await page.locator('.scene-card.selected').waitFor();
+  const scene=await page.locator('.scene-card.selected').boundingBox();
+  const timeline=await page.locator('.timeline').boundingBox();
+  assert.ok(scene&&timeline,'The scene and timeline must render');
+  assert.ok(scene.height<175,'The selected scene must be a thumbnail, not a page-height overlay');
+  assert.ok(scene.y>=timeline.y&&scene.y+scene.height<=timeline.y+timeline.height+5,'Scene card must remain inside the timeline');
+  assert.equal(await page.locator('.scene-card.selected').evaluate(el=>getComputedStyle(el).position),'static','Selected scene must not inherit absolute positioning');
+  const properties=await page.locator('.studio-properties').boundingBox();
+  const activeLayer=await page.locator('.layer-list>button.selected').boundingBox();
+  assert.ok(properties&&activeLayer&&activeLayer.height<65,'The active layer control must stay a normal button');
+  assert.ok(activeLayer.y>=properties.y&&activeLayer.y+activeLayer.height<=properties.y+properties.height,'Layer controls must stay inside the Properties panel');
+  assert.equal(await page.locator('.layer-list>button.selected').evaluate(el=>getComputedStyle(el).position),'static','Selected layer must not inherit absolute positioning');
+  console.log('Layout regression passed: scene card and properties controls stay inside their panels at 1536x960');
+
   await page.locator('.monitor-ratios button',{hasText:'9:16'}).click();
   const frame=await page.locator('.program-frame').boundingBox();
   assert.ok(frame&&Math.abs(frame.width/frame.height-9/16)<.03,'Canvas should have a true 9:16 aspect ratio');
