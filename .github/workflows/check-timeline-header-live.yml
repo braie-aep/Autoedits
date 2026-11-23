@@ -1,0 +1,27 @@
+name: Check timeline header layout is public
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/check-timeline-header-live.yml"
+jobs:
+  public-site:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify updated GitHub Pages release
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://braie-aep.github.io/Autoedits"
+          expected="c615a5d8916233044a7d1cb464354c17f6e7c0b7"
+          for n in $(seq 1 24); do
+            if curl -fsSL --max-time 15 "$base/version.json?sha=$expected&n=$n" -o /tmp/autoedit-version.json; then
+              cat /tmp/autoedit-version.json
+              if node -e 'const v=require("/tmp/autoedit-version.json");if(v.commit!==process.argv[1]||v.ui!=="fixed-workspace-3.1")process.exit(1)' "$expected"; then
+                echo "PASS: GitHub Pages published timeline title-row fix"
+                exit 0
+              fi
+            fi
+            sleep 5
+          done
+          echo "::error::Latest timeline title-row fix is not yet public"
+          exit 1
