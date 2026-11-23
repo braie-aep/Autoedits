@@ -19,7 +19,7 @@ try {
   const page=await browser.newPage({viewport:{width:1500,height:900},deviceScaleFactor:1});
   const jsErrors=[];page.on('pageerror',err=>jsErrors.push(err.message));
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
-  await page.getByText('STUDIO 3.0').waitFor();
+  await page.locator('.invideo-topbar .version').getByText('STUDIO 3.0',{exact:true}).waitFor();
   assert.equal(await page.locator('.tool-rail button').count(),8);
   await page.locator('.project-import input[type=file]').setInputFiles('/tmp/autoedit-smoke.mp4');
   await page.locator('.program-video').waitFor();
