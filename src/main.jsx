@@ -5,6 +5,7 @@ import './style.css';
 import './link-workflow.css';
 import './editor-workspace.css';
 import './invideo-inspired.css';
+import './fixed-workspace.css';
 import {makeScenes,splitAt,soundtrackTime} from './sceneUtils.js';
 import {useTimelineFilmstrip,visibleTimeWindow} from './useTimelineFilmstrip.js';
 import {drawEditorTitle,drawEditorSticker} from './canvasOverlays.js';
@@ -466,7 +467,7 @@ try{
 }
 return <div className="app editor-app">
 <header className="editor-topbar invideo-topbar">
-  <div className="logo"><span className="logoicon"><WandSparkles size={19}/></span><strong>AutoEdit</strong><span className="version">STUDIO 3.0</span></div>
+  <div className="logo"><span className="logoicon"><WandSparkles size={19}/></span><strong>AutoEdit</strong><span className="version">STUDIO 3.1</span></div>
   <div className="project-title"><span>Project</span><input aria-label="Project name" maxLength={65} value={projectName} onChange={e=>setProjectName(e.target.value)}/><span className="session-label">Local edit session</span></div>
   <div className="editor-actions"><div className="toolbar-divider"/><button type="button" className="ratio-quick" onClick={()=>setEditorTool('effects')}><Monitor size={15}/> {ratio}<ChevronDown size={13}/></button><a href="https://github.com/braie-aep/Autoedits" target="_blank" rel="noreferrer">GitHub</a><button type="button" className="top-export" onClick={()=>setEditorTool('export')}><Download size={15}/> Export</button></div>
 </header>
@@ -543,6 +544,6 @@ return <div className="app editor-app">
 {selectedLayer==='music'&&<div className="properties-body">{musicFile?<><div className="property-section"><strong>{musicFile.name}</strong><label>Soundtrack volume · {musicVolume}%<input type="range" min="0" max="100" value={musicVolume} onChange={e=>setMusicVolume(Number(e.target.value))}/></label><label className="inline-switch"><input type="checkbox" checked={musicEnabled} onChange={e=>setMusicEnabled(e.target.checked)}/> Enable track</label></div><button type="button" className="remove-action" onClick={removeSoundtrack}>Remove soundtrack</button></>:<p className="empty-library">Import your own audio in Music.</p>}</div>}
 <div className="layer-list"><strong>Layers</strong><button type="button" onClick={()=>setSelectedLayer('video')} className={selectedLayer==='video'?'selected':''}><Film size={15}/> Video <span>V1</span></button>{titleLayer&&<button type="button" onClick={()=>setSelectedLayer('text')} className={selectedLayer==='text'?'selected':''}><Type size={15}/> Text <span>T1</span></button>}{stickerLayer&&<button type="button" onClick={()=>setSelectedLayer('sticker')} className={selectedLayer==='sticker'?'selected':''}><Shapes size={15}/> Element <span>E1</span></button>}{musicFile&&<button type="button" onClick={()=>setSelectedLayer('music')} className={selectedLayer==='music'?'selected':''}><Music2 size={15}/> Music <span>A2</span></button>}</div>
 </aside>
-</main>{musicUrl&&<audio ref={musicPreviewRef} src={musicUrl} loop preload="auto" style={{display:'none'}} onLoadedMetadata={e=>{setMusicDuration(e.currentTarget.duration);e.currentTarget.volume=musicVolume/100}}/>}<footer className="editor-statusbar"><span><b>AutoEdit Studio 3.0</b> · InVideo-inspired editing workspace · Video + local music + text</span><span>{url?dimensions.join(' × ')+' · '+ratio:'Import a video or paste an authorized link to start'}</span></footer></div>}
+</main>{musicUrl&&<audio ref={musicPreviewRef} src={musicUrl} loop preload="auto" style={{display:'none'}} onLoadedMetadata={e=>{setMusicDuration(e.currentTarget.duration);e.currentTarget.volume=musicVolume/100}}/>}<footer className="editor-statusbar"><span><b>AutoEdit Studio 3.1</b> · Resizable one-screen editing workspace · Video + local music + text</span><span>{url?dimensions.join(' × ')+' · '+ratio:'Import a video or paste an authorized link to start'}</span></footer></div>}
 
 createRoot(document.getElementById('root')).render(<App/>);
