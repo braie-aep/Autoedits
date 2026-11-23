@@ -15,11 +15,13 @@ jobs:
         run: |
           set -euo pipefail
           url="https://braie-aep.github.io/Autoedits"
+          expected_sha="$(git ls-remote https://github.com/braie-aep/Autoedits.git refs/heads/main | cut -f1)"
+          echo "Latest main commit: ${expected_sha}"
           for attempt in $(seq 1 18); do
             echo "Checking public website ($attempt of 18)"
             if curl -fsSL --max-time 18 "${url}/version.json?run=${GITHUB_RUN_ID}&attempt=${attempt}" -o /tmp/autoedit-version.json; then
               cat /tmp/autoedit-version.json
-              if node -e 'const x=require("/tmp/autoedit-version.json");if(x.ui!=="scene-studio-3.0"||!x.commit)process.exit(1)'; then
+              if node -e 'const x=require("/tmp/autoedit-version.json");if(x.ui!=="scene-studio-3.0"||x.commit!==process.argv[1])process.exit(1)' "$expected_sha"; then
                 if curl -fsSL --max-time 18 "${url}/?check=${GITHUB_RUN_ID}&attempt=${attempt}" | grep -q "AutoEdit Studio 3.0"; then
                   echo "PASS: Public GitHub Pages serves Studio 3.0"
                   exit 0
