@@ -33,9 +33,10 @@ const loaded=(media,when)=>{
   if(media.readyState>=when)return Promise.resolve();
   return new Promise(resolve=>{
     let done=false;
-    const finish=()=>{if(done)return;done=true;clearTimeout(timer);media.removeEventListener('loadedmetadata',finish);media.removeEventListener('loadeddata',finish);media.removeEventListener('error',finish);resolve()};
-    media.addEventListener('loadedmetadata',finish);media.addEventListener('loadeddata',finish);media.addEventListener('error',finish);
-    const timer=setTimeout(finish,6000);
+    const finish=(force=false)=>{if(done||(!force&&media.readyState<when&&!media.error))return;done=true;clearTimeout(timer);media.removeEventListener('loadedmetadata',onReady);media.removeEventListener('loadeddata',onReady);media.removeEventListener('error',onError);resolve()};
+    const onReady=()=>finish(false),onError=()=>finish(true);
+    media.addEventListener('loadedmetadata',onReady);media.addEventListener('loadeddata',onReady);media.addEventListener('error',onError);
+    const timer=setTimeout(()=>finish(true),6000);
   });
 };
 const seekFrame=(media,time)=>{
@@ -70,7 +71,7 @@ export function useTimelineFilmstrip(url,duration,mode,zoom,windowRange) {
     const ctx=canvas.getContext('2d',{alpha:false});
     async function capture(){
       media.src=url;
-      await loaded(media,1);
+      await loaded(media,2);
       if(cancelled||!ctx||!media.videoWidth||!media.videoHeight)return;
       const crop=sourceCropRect(media.videoWidth,media.videoHeight,canvas.width,canvas.height);
       for(const p of missing){
