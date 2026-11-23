@@ -25,6 +25,25 @@ try {
   await page.locator('.project-import input[type=file]').setInputFiles('/tmp/autoedit-smoke.mp4');
   await page.locator('.program-video').waitFor();
   await page.waitForFunction(()=>document.querySelector('.program-video')?.videoWidth>0);
+  // Cuts should be opened beside Scenes/Layers, never displayed below the tracks.
+  assert.equal(await page.locator('.timeline .cut-tools').count(),0,'Cut controls must not be below the timeline');
+  assert.equal(await page.locator('.timeline .timefields').count(),0,'Trim fields must not be below the timeline');
+  const cutToggle=page.locator('.timeline-mode-group .timeline-cuts-trigger');
+  await cutToggle.click();
+  await page.locator('.tool-inspector .cut-inspector').waitFor();
+  assert.equal(await cutToggle.getAttribute('aria-pressed'),'true','Cuts button reflects the selected tools panel');
+  assert.equal(await page.locator('.timeline .scene-storyboard').count(),1,'Opening Cuts must not replace the scene timeline');
+  const cutPanel=page.locator('.tool-inspector .cut-inspector');
+  await cutPanel.locator('.cut-fields input').first().fill('1');
+  await cutPanel.locator('.cut-fields input').nth(1).fill('2');
+  await cutPanel.locator('.cut-action').click();
+  await cutPanel.getByText('Manual cut 1').waitFor();
+  assert.equal(await page.locator('.timeline .cut-tools').count(),0,'Creating a cut cannot insert tools beneath the timeline');
+  await cutPanel.getByRole('button',{name:'Restore'}).click();
+  assert.equal(await cutPanel.getByText('Manual cut 1').count(),0,'Restore should remove a manual cut');
+  await page.locator('.tool-rail').getByRole('button',{name:'Media'}).click();
+  console.log('Cuts-panel regression passed: toolbar toggle opens working controls on the left, without touching timeline layout');
+
   // Regression: the legacy unscoped `.selected` rule used to absolutely position
   // the selected scene card and selected layer button across the whole editor.
   await page.locator('.scene-card.selected').waitFor();
