@@ -10,7 +10,7 @@ export async function detectSilence(file,{thresholdDb=-38,minSilence=0.55}={}){
     const frame=Math.max(1,Math.floor(sampleRate*0.025));
     const threshold=Math.pow(10,thresholdDb/20);
     const silent=[];
-    const barCount=180,peaks=Array(barCount).fill(0);
+    const barCount=512,peaks=Array(barCount).fill(0);
     let open=null;
     for(let i=0;i<decoded.length;i+=frame){
       const end=Math.min(decoded.length,i+frame);
