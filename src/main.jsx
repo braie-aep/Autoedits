@@ -56,13 +56,14 @@ const activeCaptions=activeHighlightId?(captionsByHighlight[activeHighlightId]||
 const activeClipLabel=activeHighlight?'Highlight '+(highlights.findIndex(h=>h.id===activeHighlightId)+1):'Full video';
 const [editorTool,setEditorTool]=useState('media'),[timelineZoom,setTimelineZoom]=useState(1);
 const [projectName,setProjectName]=useState('Untitled video'),[selectedLayer,setSelectedLayer]=useState('video');
-useEffect(()=>{if(musicPreviewRef.current){musicPreviewRef.current.volume=musicVolume/100;musicPreviewRef.current.muted=!musicEnabled;if(!musicEnabled)musicPreviewRef.current.pause();else if(playing)musicPreviewRef.current.play().catch(()=>{})}},[musicVolume,musicEnabled,playing,musicUrl]);
+
 const [timelineView,setTimelineView]=useState('scenes'),[sceneMarkers,setSceneMarkers]=useState([]),[sceneThumbs,setSceneThumbs]=useState({});
 const scenes=makeScenes(duration,sceneMarkers),currentScene=scenes.find(c=>current>=c.start&&current<c.end)||scenes[scenes.length-1];
 const [titleLayer,setTitleLayer]=useState(null),[stickerLayer,setStickerLayer]=useState(null);
 const [videoFilter,setVideoFilter]=useState({brightness:100,contrast:100,saturate:100});
 const [musicFile,setMusicFile]=useState(null),[musicUrl,setMusicUrl]=useState(''),[musicDuration,setMusicDuration]=useState(0),[musicVolume,setMusicVolume]=useState(65),[musicEnabled,setMusicEnabled]=useState(true);
 const musicUrlRef=useRef(''),musicPreviewRef=useRef(null);
+useEffect(()=>{if(musicPreviewRef.current){musicPreviewRef.current.volume=musicVolume/100;musicPreviewRef.current.muted=!musicEnabled;if(!musicEnabled)musicPreviewRef.current.pause();else if(playing)musicPreviewRef.current.play().catch(()=>{})}},[musicVolume,musicEnabled,playing,musicUrl]);
 const stageRef=useRef(null),[stageSize,setStageSize]=useState({width:0,height:0});
 useEffect(()=>{if(!url||!stageRef.current||typeof ResizeObserver==='undefined')return;const el=stageRef.current;const measure=()=>{const b=el.getBoundingClientRect();setStageSize(old=>(old.width===b.width&&old.height===b.height)?old:{width:b.width,height:b.height})};const observer=new ResizeObserver(measure);observer.observe(el);measure();return()=>observer.disconnect()},[url]);
 const [visualSamples,setVisualSamples]=useState([]),[visualScanning,setVisualScanning]=useState(false),visualJob=useRef(0);
