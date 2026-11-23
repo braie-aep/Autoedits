@@ -37,10 +37,10 @@ jobs:
       - name: Build website
         run: npm run build
 
-      - name: Stamp and verify the Studio 3.0 release
+      - name: Stamp and verify the Studio 3.1 release
         run: |
-          node -e 'const fs=require("node:fs");fs.writeFileSync("dist/version.json",JSON.stringify({app:"AutoEdit Studio",ui:"scene-studio-3.0",commit:process.env.GITHUB_SHA,builtAt:new Date().toISOString()},null,2))'
-          grep -Rq "STUDIO 3.0" dist/assets/ || { echo "::error::New editor UI was not included in the release"; exit 1; }
+          node -e 'const fs=require("node:fs");fs.writeFileSync("dist/version.json",JSON.stringify({app:"AutoEdit Studio",ui:"fixed-workspace-3.1",commit:process.env.GITHUB_SHA,builtAt:new Date().toISOString()},null,2))'
+          grep -Rq "STUDIO 3.1" dist/assets/ || { echo "::error::New editor UI was not included in the release"; exit 1; }
           test -f dist/index.html
           echo "Publishing multitrack editor from commit ${GITHUB_SHA}"
 
@@ -65,11 +65,11 @@ jobs:
           fi
           for n in $(seq 1 18); do
             if curl --fail --silent --show-error --location --max-time 20 "${PUBLIC_URL%/}/version.json?sha=${GITHUB_SHA}&check=${n}" | grep -q "${GITHUB_SHA}"; then
-              echo "GitHub Pages serves Studio 3.0 commit ${GITHUB_SHA}"
+              echo "GitHub Pages serves Studio 3.1 commit ${GITHUB_SHA}"
               exit 0
             fi
             echo "Waiting for GitHub Pages to serve commit ${GITHUB_SHA} (check ${n}/18)"
             sleep 5
           done
-          echo "::error::Published site is not serving the expected Studio 3.0 revision"
+          echo "::error::Published site is not serving the expected Studio 3.1 revision"
           exit 1
