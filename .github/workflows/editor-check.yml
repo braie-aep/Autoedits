@@ -26,3 +26,21 @@ jobs:
         run: node --test src/*.test.mjs
       - name: Build editing workspace
         run: npm run build
+      - name: Install headless browser for real UI checks
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Create short video and audio test assets
+        run: |
+          ffmpeg -y -hide_banner -loglevel error -f lavfi -i testsrc2=size=640x360:rate=12 -f lavfi -i sine=frequency=440:sample_rate=44100 -t 4 -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest /tmp/autoedit-smoke.mp4
+          ffmpeg -y -hide_banner -loglevel error -f lavfi -i sine=frequency=550:sample_rate=44100 -t 4 /tmp/autoedit-music.wav
+      - name: Verify new UI works in Chromium
+        run: node scripts/editor-smoke.mjs
+      - name: Store optional UI screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: studio-3-browser-preview
+          path: artifacts/studio3.png
+          if-no-files-found: ignore
+
