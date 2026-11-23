@@ -88,7 +88,7 @@ try {
   assert.ok(afterPan>=3,'Panning across a long zoomed timeline must retain time-based frame tiles');
   assert.ok(await page.locator('.seq-track.audio-track').count()>=2,'Audio waveform lanes remain separate from video frames');
   // Browser synthetic slider events vary; make the storyboard itself the main assertion.
-  assert.ok(await page.locator('.scene-card').count()>=1,'A scene storyboard must be present');
+  assert.ok(await page.locator('.seq-track.video-track').count()===1,'The detailed video track must stay mounted in Layers view');
   if(jsErrors.length)throw new Error('Browser JS error: '+jsErrors.join(' | '));
   fs.mkdirSync('artifacts',{recursive:true});
   await page.screenshot({path:'artifacts/studio3.png',fullPage:false});
