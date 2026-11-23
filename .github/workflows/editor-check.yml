@@ -23,6 +23,6 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Test composition crop calculations
-        run: node --test src/renderGeometry.test.mjs
+        run: node --test src/*.test.mjs
       - name: Build editing workspace
         run: npm run build
