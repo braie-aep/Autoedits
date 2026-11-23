@@ -78,7 +78,7 @@ try {
   });
   await page.getByRole('button',{name:'Split scene'}).click();
   await page.getByRole('button',{name:'Layers',exact:true}).click();
-  for(let i=0;i<3;i++)await page.getByRole('button',{name:'Zoom in timeline'}).click();
+  for(let i=0;i<3;i++)await page.locator('.timeline-toolbar button[title="Zoom in timeline"]').click();
   assert.ok((await page.locator('.sequence-scroll').evaluate(el=>el.scrollWidth))>(await page.locator('.sequence-scroll').evaluate(el=>el.clientWidth))*5,'Zoom must make the timeline detailed and horizontally pannable inside its own panel');
   await page.waitForFunction(()=>document.querySelectorAll('.seq-frame-tile img').length>=3,null,{timeout:25000});
   assert.ok(await page.locator('.seq-frame-tile').count()>2,'Zoomed V1 track must contain frames at actual timestamps');
