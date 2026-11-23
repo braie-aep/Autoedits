@@ -1,16 +1,13 @@
 name: Check public GitHub Pages Studio version
 
 on:
-  pull_request:
-    paths:
-      - ".github/workflows/pages-live-check.yml"
   workflow_dispatch:
 
 jobs:
   public-site:
     runs-on: ubuntu-latest
     steps:
-      - name: Confirm public website serves Studio 2.0
+      - name: Confirm public website serves Studio 3.0
         shell: bash
         run: |
           set -euo pipefail
@@ -19,9 +16,9 @@ jobs:
             echo "Public-site check #$attempt: $origin"
             if curl -fLsS --max-time 15 "$origin/version.json?run=${GITHUB_RUN_ID}&attempt=${attempt}" -o /tmp/autoedit-version.json; then
               cat /tmp/autoedit-version.json
-              if node -e 'const x=require("/tmp/autoedit-version.json");if(x.ui!=="multitrack-2.0"||!x.commit)process.exit(1)'; then
-                if curl -fLsS --max-time 15 "$origin/?run=${GITHUB_RUN_ID}&attempt=${attempt}" | grep -q 'AutoEdit Studio 2.0'; then
-                  echo "PASS: Published GitHub Pages is Studio 2.0"
+              if node -e 'const x=require("/tmp/autoedit-version.json");if(x.ui!=="scene-studio-3.0"||!x.commit)process.exit(1)'; then
+                if curl -fLsS --max-time 15 "$origin/?run=${GITHUB_RUN_ID}&attempt=${attempt}" | grep -q 'AutoEdit Studio 3.0'; then
+                  echo "PASS: Published GitHub Pages is Studio 3.0"
                   exit 0
                 fi
               fi
